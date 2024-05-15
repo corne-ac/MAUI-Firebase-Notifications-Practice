@@ -11,8 +11,8 @@ namespace PushMauiSample
 {
     public partial class MainPage : ContentPage
     {
-        public string Token { get; set; }
-
+        public string Token { get; set; } = String.Empty;
+        public int Count { get; set; } = 0;
         public MainPage()
         {
             InitializeComponent();
@@ -21,40 +21,61 @@ namespace PushMauiSample
 
         private async void GetTokenClicked(object sender, EventArgs e)
         {
+            Token = await GetTokenAsync();
+            await DisplayAlert("FCM token", Token, "OK");
+
+            // This token is generated for each device
+            // Store this in a DB or something to send out notifications to devices
+            // It expires after a month
+            // Store with a timestamp
+        }
+
+        private async Task<string> GetTokenAsync()
+        {
             await CrossFirebaseCloudMessaging.Current.CheckIfValidAsync();
             var token = await CrossFirebaseCloudMessaging.Current.GetTokenAsync();
-            Console.WriteLine($"=================== FCM token: {token}");
-            Token = token;
-            await DisplayAlert("FCM token", token, "OK");
+            Console.WriteLine($"FCM token: {token}");
+            return token;
         }
 
         private async void SendPushClicked(object sender, EventArgs e)
         {
-            Console.WriteLine("==== GETTING CREDENTIALS ====");
-            var app = FirebaseApp.Create(new AppOptions
+            var app = FirebaseApp.GetInstance("[DEFAULT]"); // Figure out how to set own names
+            if (app == null)
             {
-                Credential = await GetCredential()
-            });
-            Console.WriteLine("==== GETTING MESSAGING ====");
+                app = FirebaseApp.Create(new AppOptions
+                {
+                    Credential = await GetCredential()
+                });
+            }
+
+            if (String.IsNullOrWhiteSpace(Token))
+            {
+                Token = await GetTokenAsync();
+            }
 
             FirebaseMessaging messaging = FirebaseMessaging.GetMessaging(app);
-            Console.WriteLine("==== MAKING MESSAGE ====");
 
             var message = new Message()
             {
                 Token = Token,
-                Notification = new Notification { Title = "Hello world!", Body = "It's a message for Android with MAUI" },
+                Notification = new Notification { Title = "Hello world!", Body = $"This is message number {Count++}" },
                 Data = new Dictionary<string, string> { { "greeting", "hello" } },
                 Android = new AndroidConfig { Priority = Priority.Normal },
                 Apns = new ApnsConfig { Headers = new Dictionary<string, string> { { "apns-priority", "5" } } }
             };
-            Console.WriteLine("==== SENDING MESSAGE ====");
 
             var response = await messaging.SendAsync(message);
 
-            Console.WriteLine("==== DISPLAYING RESPONSE ====");
-
-            await DisplayAlert("Response", response, "OK");
+            if (response != null)
+            {
+                Console.WriteLine("Response: " + response.ToString());
+                await DisplayAlert("Response", response, "OK");
+            }
+            else
+            {
+                await DisplayAlert("Response Fail", "Response Returned Null", "OK");
+            }
         }
 
         private async Task<GoogleCredential> GetCredential()
@@ -62,7 +83,6 @@ namespace PushMauiSample
             var path = await FileSystem.OpenAppPackageFileAsync("firebase-adminsdk.json");
             return GoogleCredential.FromStream(path);
         }
-
     }
 
 }

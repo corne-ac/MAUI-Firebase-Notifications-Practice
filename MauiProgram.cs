@@ -21,7 +21,7 @@ namespace PushMauiSample
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
-                .RegisterFirebaseServices()
+                .RegisterFirebaseServices() // Add this part to register the service for firebase
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -34,6 +34,9 @@ namespace PushMauiSample
 
             return builder.Build();
         }
+
+
+        // This prepares the application and device to receive notifications
 
         private static MauiAppBuilder RegisterFirebaseServices(this MauiAppBuilder builder)
         {
