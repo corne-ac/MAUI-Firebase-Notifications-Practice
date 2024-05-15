@@ -365,3 +365,4 @@ FodyWeavers.xsd
 # Other
 /Resources/Raw/firebase-adminsdk.json
 /google-services.json
+/GoogleService-Info.plist
